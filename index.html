@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Демонстрационный интерфейс VPN Mini App">
+  <title>North VPN — Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #121a2d;
+      --panel2: #17223a;
+      --line: rgba(255,255,255,.09);
+      --text: #f4f7ff;
+      --muted: #93a2bf;
+      --accent: #82f0c8;
+      --accent2: #63b9ff;
+      --danger: #ffb2a8;
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(ellipse at 85% 0%, rgba(58,105,180,.22), transparent 38%), var(--bg);
+    }
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .app { width: min(100%, 520px); margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 18px calc(104px + env(safe-area-inset-bottom)); }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin: 3px 0 25px; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:-.03em; font-size:19px; }
+    .brand-mark { width:38px; height:38px; border-radius:14px; display:grid; place-items:center; background:linear-gradient(135deg,var(--accent),#58c7f5); color:#08121d; box-shadow:0 8px 24px rgba(99,220,199,.14); }
+    .brand-mark svg { width:22px;height:22px; }
+    .avatar { border:1px solid var(--line); background:var(--panel); color:var(--text); width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:750; }
+    .eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:10px; color:var(--muted); font-weight:800; }
+    h1 { font-size:clamp(29px,8vw,38px); line-height:1.04; letter-spacing:-.055em; margin:10px 0 10px; }
+    .lead { font-size:14px; line-height:1.5; color:var(--muted); margin:0; }
+    .hero { position:relative; overflow:hidden; padding:22px; border:1px solid rgba(130,240,200,.14); border-radius:28px; background:linear-gradient(145deg,rgba(31,54,80,.92),rgba(18,26,45,.98) 70%); }
+    .hero::after { content:""; position:absolute; width:210px;height:210px;border-radius:50%;right:-80px;top:55px;border:1px solid rgba(130,240,200,.10);box-shadow:0 0 0 24px rgba(130,240,200,.025),0 0 0 50px rgba(130,240,200,.02);pointer-events:none; }
+    .status { display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:7px 10px;background:rgba(130,240,200,.1);color:var(--accent);font-size:11px;font-weight:800; }
+    .dot { width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(130,240,200,.65); }
+    .hero h2 { font-size:24px;letter-spacing:-.04em;margin:16px 0 8px; position:relative;z-index:1; }
+    .hero p { font-size:13px;line-height:1.5;color:#acbbd3;max-width:290px;margin:0 0 20px;position:relative;z-index:1; }
+    .primary { width:100%; min-height:51px; border:0; border-radius:16px; background:linear-gradient(110deg,var(--accent),#a0f3e1); color:#07151b; font-weight:850; box-shadow:0 9px 25px rgba(130,240,200,.12); position:relative;z-index:1; }
+    .primary:active { transform:scale(.99); }
+    .section-head { display:flex;align-items:center;justify-content:space-between;margin:27px 2px 13px; }
+    .section-head h3 { margin:0;font-size:17px;letter-spacing:-.025em; }
+    .quiet-btn { border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:750;padding:7px; }
+    .server-card { display:flex;align-items:center;gap:13px;padding:15px;border-radius:20px;background:var(--panel);border:1px solid var(--line);width:100%;text-align:left;color:var(--text); }
+    .flag { width:48px;height:48px; flex:0 0 48px; border-radius:16px;display:grid;place-items:center;background:var(--panel2);font-size:23px; }
+    .server-info { min-width:0;flex:1; }
+    .server-name { font-size:14px;font-weight:800;margin-bottom:5px; }
+    .server-meta { color:var(--muted);font-size:11px; }
+    .ping { color:var(--accent);font-size:11px;font-weight:800;white-space:nowrap; }
+    .feature-grid { display:grid;grid-template-columns:1fr 1fr;gap:11px; }
+    .feature { background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:15px;min-height:120px; }
+    .feature-icon { width:36px;height:36px;border-radius:12px;background:var(--panel2);display:grid;place-items:center;color:var(--accent);margin-bottom:13px; }
+    .feature-icon svg { width:19px;height:19px; }
+    .feature strong { display:block;font-size:13px;margin-bottom:5px; }
+    .feature span { display:block;color:var(--muted);font-size:11px;line-height:1.45; }
+    .plan { border:1px solid rgba(130,240,200,.17);background:linear-gradient(145deg,rgba(25,48,66,.95),rgba(18,26,45,.98));border-radius:22px;padding:18px; }
+    .plan-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px; }
+    .plan-name { font-size:16px;font-weight:850; }
+    .demo-tag { color:var(--accent);background:rgba(130,240,200,.09);border-radius:9px;padding:6px 8px;font-size:9px;font-weight:900;letter-spacing:.08em; }
+    .price { font-size:31px;letter-spacing:-.05em;font-weight:850;margin:13px 0 3px; }
+    .price small { font-size:12px;font-weight:500;letter-spacing:0;color:var(--muted); }
+    .plan-note { color:var(--muted);font-size:11px;margin:0 0 15px; }
+    .secondary { width:100%;border:1px solid rgba(130,240,200,.35);background:transparent;color:var(--accent);border-radius:14px;min-height:46px;font-size:13px;font-weight:800; }
+    .mini-note { color:var(--muted);font-size:10px;line-height:1.5;text-align:center;margin:11px 8px 0; }
+    .view { display:none; }
+    .view.active { display:block;animation:enter .18s ease-out; }
+    @keyframes enter { from {opacity:.45;transform:translateY(4px)} to {opacity:1;transform:none} }
+    .server-option { margin-bottom:10px; }
+    .server-option.selected { border-color:rgba(130,240,200,.65);background:#142c35; }
+    .check { color:var(--accent);font-size:18px;font-weight:900; }
+    .profile-card { text-align:center;padding:26px 18px;background:var(--panel);border:1px solid var(--line);border-radius:24px; }
+    .profile-avatar { width:66px;height:66px;border-radius:22px;margin:0 auto 13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#09131d;font-size:25px;font-weight:900; }
+    .profile-card h2 { font-size:20px;margin:0 0 6px; }
+    .profile-card p { color:var(--muted);font-size:12px;margin:0;overflow-wrap:anywhere; }
+    .info-row { margin-top:13px;padding:15px;border-radius:17px;background:var(--panel);border:1px solid var(--line);display:flex;gap:12px;align-items:center; }
+    .info-row .feature-icon { margin:0;flex:0 0 36px; }
+    .info-row div:nth-child(2) { flex:1; }
+    .info-row strong { display:block;font-size:12px;margin-bottom:4px; }
+    .info-row span { display:block;font-size:11px;line-height:1.45;color:var(--muted); }
+    .bottom-nav { position:fixed;z-index:5;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,520px);padding:10px 13px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(10,15,30,.91);border-top:1px solid var(--line);backdrop-filter:blur(20px); }
+    .nav-btn { display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:transparent;color:#7f8eaa;padding:7px 3px;font-size:10px;font-weight:700;border-radius:13px; }
+    .nav-btn svg { width:20px;height:20px; }
+    .nav-btn.active { color:var(--accent);background:rgba(130,240,200,.07); }
+    .toast { position:fixed;z-index:10;bottom:90px;left:50%;transform:translate(-50%,15px);opacity:0;pointer-events:none;width:max-content;max-width:calc(100% - 32px);background:#e9fff7;color:#092019;padding:12px 16px;border-radius:14px;font-size:12px;line-height:1.4;font-weight:750;box-shadow:0 9px 40px #0005;transition:all .2s; }
+    .toast.show { opacity:1;transform:translate(-50%,0); }
+    .demo-banner { margin-top:19px;border:1px solid rgba(255,206,133,.18);background:rgba(255,206,133,.06);border-radius:15px;padding:12px 13px;color:#ddc49c;font-size:10px;line-height:1.55; }
+    @media (min-width:600px) { .app { padding-top:30px; } .bottom-nav { bottom:15px;border:1px solid var(--line);border-radius:20px;padding-bottom:10px; } }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 20 6v5.1c0 5.2-3.5 8.4-8 10.1-4.5-1.7-8-4.9-8-10.1V6l8-3.2Z" stroke="currentColor" stroke-width="1.8"/><path d="m8.4 12.1 2.3 2.3 4.9-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>north<span style="color:var(--accent)">vpn</span></div>
+      <button class="avatar" id="avatarBtn" aria-label="Открыть профиль">N</button>
+    </header>
+
+    <section class="view active" id="view-home" data-view="home">
+      <div class="eyebrow">Ваш приватный доступ</div>
+      <h1>Интернет.<br>Без лишних границ.</h1>
+      <p class="lead" style="margin-bottom:20px">Простой интерфейс управления VPN — выбирайте локацию и контролируйте подписку.</p>
+      <div class="hero">
+        <span class="status"><span class="dot"></span> ДЕМО-РЕЖИМ</span>
+        <h2>Всё готово к настройке</h2>
+        <p>Это предварительный интерфейс. VPN-подключение ещё не настроено — сейчас можно посмотреть экраны и кнопки приложения.</p>
+        <button class="primary" id="connectBtn">Посмотреть подключение</button>
+      </div>
+      <div class="section-head"><h3>Быстрый выбор локации</h3><button class="quiet-btn" data-goto="servers">Все серверы</button></div>
+      <button class="server-card" id="homeServer" data-goto="servers">
+        <span class="flag">🇫🇮</span><span class="server-info"><span class="server-name">Финляндия · Helsinki</span><span class="server-meta">Европа · тестовая локация</span></span><span class="ping">24 ms</span>
+      </button>
+      <div class="section-head"><h3>Что внутри</h3></div>
+      <div class="feature-grid">
+        <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div><strong>Защита соединения</strong><span>Экран для будущего статуса VPN.</span></div>
+        <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div><strong>Подписка 24/7</strong><span>Срок действия и управление доступом.</span></div>
+      </div>
+      <div class="demo-banner">Демо: кнопки меняют экраны интерфейса, но не запускают VPN и не списывают деньги.</div>
+    </section>
+
+    <section class="view" id="view-servers" data-view="servers">
+      <div class="eyebrow">Точки подключения</div><h1>Выбери<br>свою локацию.</h1><p class="lead" style="margin-bottom:22px">Макеты серверов для демонстрации. Реальные узлы появятся после настройки VPN-панели.</p>
+      <div id="serverList">
+        <button class="server-card server-option selected" data-server="🇫🇮 Финляндия · Helsinki"><span class="flag">🇫🇮</span><span class="server-info"><span class="server-name">Финляндия · Helsinki</span><span class="server-meta">Европа · тестовая локация</span></span><span class="check">✓</span></button>
+        <button class="server-card server-option" data-server="🇳🇱 Нидерланды · Amsterdam"><span class="flag">🇳🇱</span><span class="server-info"><span class="server-name">Нидерланды · Amsterdam</span><span class="server-meta">Европа · скоро</span></span><span class="ping">—</span></button>
+        <button class="server-card server-option" data-server="🇸🇪 Швеция · Stockholm"><span class="flag">🇸🇪</span><span class="server-info"><span class="server-name">Швеция · Stockholm</span><span class="server-meta">Европа · скоро</span></span><span class="ping">—</span></button>
+      </div>
+      <div class="demo-banner">Выбор локации сохраняется только в текущем демо-сеансе. Доступность и задержка не проверяются.</div>
+    </section>
+
+    <section class="view" id="view-subscription" data-view="subscription">
+      <div class="eyebrow">Тарифы и доступ</div><h1>Твой план.</h1><p class="lead" style="margin-bottom:22px">Выбери вид тарифа, чтобы посмотреть карточку будущей подписки.</p>
+      <div class="plan" id="planCard"><div class="plan-top"><div><div class="plan-name" id="planName">На 1 месяц</div><div class="price" id="planPrice">299 ₽ <small>/ 30 дней</small></div></div><span class="demo-tag">ПРЕДПРОСМОТР</span></div><p class="plan-note">Демо-цена для макета. Не является публичной офертой.</p><button class="secondary" id="changePlanBtn">Выбрать другой тариф</button></div>
+      <div class="section-head"><h3>Что будет включено</h3></div>
+      <div class="info-row"><div class="feature-icon">✓</div><div><strong>Защищённый доступ</strong><span>Будет включён после настройки VPN-узла и выдачи профиля.</span></div></div>
+      <div class="info-row"><div class="feature-icon">↻</div><div><strong>Продление подписки</strong><span>Появится после подключения сервиса платежей.</span></div></div>
+      <button class="primary" style="margin-top:18px" id="buyBtn">Продолжить · демо</button>
+      <p class="mini-note">Реальная оплата пока отключена. Кнопка ничего не покупает.</p>
+    </section>
+
+    <section class="view" id="view-profile" data-view="profile">
+      <div class="eyebrow">Личный кабинет</div><h1>Твой профиль.</h1>
+      <div class="profile-card"><div class="profile-avatar" id="profileInitial">N</div><h2 id="profileName">Гость</h2><p id="profileId">Демо-пользователь · данные не сохранены</p></div>
+      <div class="info-row"><div class="feature-icon">✦</div><div><strong>Статус доступа</strong><span>Демонстрация. Реальная подписка ещё не подключена.</span></div></div>
+      <div class="info-row"><div class="feature-icon">?</div><div><strong>Помощь и подключение</strong><span>Здесь появятся инструкции для iOS, Android, Windows и macOS.</span></div></div>
+      <button class="secondary" style="margin-top:18px" id="helpBtn">Показать сообщение о помощи</button>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Основная навигация">
+    <button class="nav-btn active" data-goto="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/></svg><span>Главная</span></button>
+    <button class="nav-btn" data-goto="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><span>Серверы</span></button>
+    <button class="nav-btn" data-goto="subscription"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span>Подписка</span></button>
+    <button class="nav-btn" data-goto="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span>Профиль</span></button>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        try { if (tg.setHeaderColor) tg.setHeaderColor('#0b1020'); } catch (_) {}
+        try { if (tg.setBackgroundColor) tg.setBackgroundColor('#0b1020'); } catch (_) {}
+      }
+
+      const toast = document.getElementById('toast');
+      let toastTimer;
+      function notify(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+        if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('light'); } catch (_) {} }
+      }
+      function go(view) {
+        document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.toggle('active', el.dataset.goto === view));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      document.querySelectorAll('[data-goto]').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.goto)));
+      document.getElementById('avatarBtn').addEventListener('click', () => go('profile'));
+      document.getElementById('connectBtn').addEventListener('click', () => notify('Демо-режим: VPN-сервер ещё не подключён.'));
+      document.querySelectorAll('.server-option').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.server-option').forEach(other => {
+          other.classList.remove('selected');
+          const check = other.querySelector('.check');
+          if (check) check.textContent = '—';
+        });
+        btn.classList.add('selected');
+        const indicator = btn.querySelector('.check') || btn.querySelector('.ping');
+        if (indicator) { indicator.classList.add('check'); indicator.textContent = '✓'; }
+        notify('Выбрана локация: ' + btn.dataset.server + '. Это пока макет.');
+      }));
+      const plans = [
+        {name:'На 1 месяц',price:'299 ₽',period:'30 дней'},
+        {name:'На 3 месяца',price:'799 ₽',period:'90 дней'},
+        {name:'На 12 месяцев',price:'2 790 ₽',period:'365 дней'}
+      ];
+      let planIndex = 0;
+      function renderPlan() {
+        const plan = plans[planIndex];
+        document.getElementById('planName').textContent = plan.name;
+        document.getElementById('planPrice').innerHTML = `${plan.price} <small>/ ${plan.period}</small>`;
+      }
+      document.getElementById('changePlanBtn').addEventListener('click', () => { planIndex = (planIndex + 1) % plans.length; renderPlan(); notify('Выбран тариф: ' + plans[planIndex].name); });
+      document.getElementById('buyBtn').addEventListener('click', () => notify('Демо: оплата отключена. Списание не производится.'));
+      document.getElementById('helpBtn').addEventListener('click', () => notify('Раздел поддержки пока не подключён.'));
+
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        const user = tg.initDataUnsafe.user;
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Пользователь Telegram';
+        document.getElementById('profileName').textContent = displayName;
+        document.getElementById('profileInitial').textContent = (user.first_name || 'T').slice(0,1).toUpperCase();
+        document.getElementById('profileId').textContent = user.username ? '@' + user.username : 'Профиль Telegram';
+        document.querySelector('.status').innerHTML = '<span class="dot"></span> TELEGRAM WEB APP';
+      } else {
+        document.getElementById('profileName').textContent = 'Предпросмотр в браузере';
+      }
+    })();
+  </script>
+</body>
+</html>
